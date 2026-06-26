@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #f0f2f5; font-family: 'Sarabun', sans-serif; padding: 15px; }
+    .main-card { max-width: 500px; margin: auto; background: white; border-radius: 25px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+    .page { display: none; } .active { display: block; }
+    .avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 15px; }
+    #loader { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); display:none; justify-content:center; align-items:center; z-index:9999; }
+
+    .dashboard-container { display: flex; gap: 10px; margin-bottom: 20px; align-items: stretch; }
+
+    .monthly-left {
+  flex: 1.5;
+  background: linear-gradient(135deg, #0d6efd, #0043a8);
+  color: white;
+  border-radius: 18px;
+  padding: 10px 5px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* กระจาย 3 ส่วนให้พอดี */
+}
+.stat-divider { border-top: 1px solid rgba(255,255,255,0.2); margin: 4px 0; }
+.stat-label { font-size: 8px; opacity: 0.8; line-height: 1.2; }
+.stat-value { font-size: 14px; font-weight: bold; }
+
+    .schedule-right { flex: 3.5; background: white; border-radius: 18px; padding: 12px; border: 1px solid #e0e0e0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+    .schedule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    .schedule-title { font-size: 12px; font-weight: bold; color: #0d6efd; margin: 0; }
+    .schedule-filter { font-size: 10px; padding: 2px 5px; border-radius: 5px; width: 100px; display: none; }
+    .schedule-list { max-height: 150px; overflow-y: auto; font-size: 11px; }
+    .schedule-item { background: #f8f9fa; border-radius: 8px; padding: 6px 10px; margin-bottom: 5px; border-left: 3px solid #0d6efd; display: flex; justify-content: space-between; align-items: center; }
+
+    .course-btn { font-size: 13px; margin: 4px; padding: 8px 16px; border-radius: 50px; transition: 0.2s; flex: 1 1 auto; min-width: 120px; }
+    #reportContent { text-align: left; background: #fff; border-radius: 15px; padding: 20px; border: 1px solid #eee; white-space: pre-wrap; word-wrap: break-word; line-height: 1.8; font-size: 15px; color: #333; }
+    .section-title { font-size: 14px; font-weight: bold; margin: 15px 0 10px 0; border-left: 5px solid #0d6efd; padding-left: 10px; }
+    .report-img { width: 100%; border-radius: 10px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .gallery-item { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 12px; cursor: pointer; transition: 0.3s; }
+  </style>
+</head>
+<body>
+
+<div id="loader"><div class="spinner-border text-primary"></div></div>
+
+<div class="main-card">
+  <div id="loginPage" class="page active text-center">
+    <h3 class="fw-bold text-primary mb-4">Academy System</h3>
+    <input type="text" id="userInput" class="form-control mb-2 p-3" placeholder="Username">
+    <input type="password" id="passInput" class="form-control mb-3 p-3" placeholder="Password">
+    <button class="btn btn-primary w-100 py-3 fw-bold rounded-pill" onclick="handleLogin()">เข้าสู่ระบบ</button>
+  </div>
+
+  <div id="adminPage" class="page">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span id="roleBadge" class="badge rounded-pill p-2 px-3"></span>
+      <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">Logout</button>
+    </div>
+
+    <div class="dashboard-container">
+      <div class="monthly-left">
+  <div>
+    <div class="stat-label">สะสมทั้งหมด</div>
+    <div id="allTimeTotal" class="stat-value">0.00</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div>
+    <div class="stat-label">เดือนนี้</div>
+    <div id="monthlyTotal" class="stat-value">0.00</div>
+  </div>
+  <div class="stat-divider"></div>
+  <div id="specificTeacherArea" style="display: block;"> <div class="stat-divider"></div>
+  <div class="stat-label" id="specificLabel">ยอดครูที่เลือก (เดือนนี้)</div>
+  <div id="specificTotal" class="stat-value" style="color: #ffeb3b;">0.00</div>
+</div>
+</div>
+
+      <div class="schedule-right">
+        <div class="schedule-header">
+          <p class="schedule-title"><i class="fa-regular fa-calendar-days me-1"></i> ตารางสอนครู</p>
+          <select id="filterTeacher" class="form-select schedule-filter" onchange="filterSchedule()"></select>
+        </div>
+        <div id="scheduleList" class="schedule-list"></div>
+      </div>
+    </div>
+
+    <select id="studentSelect" class="form-select mb-3 shadow-sm p-2" onchange="loadAdminData()">
+      <option value="">-- เลือกนักเรียน --</option>
+    </select>
+
+    <div id="adminForm" style="display:none;">
+      <div class="text-center"><img id="adminPic" class="avatar"></div>
+      <div class="calc-area bg-light p-3 rounded-4 mb-3">
+        <div class="row g-2 text-center align-items-center">
+          <div class="col-4">
+            <div class="small text-muted">คงเหลือเดิม</div>
+            <div id="originalDisplay" class="fw-bold">0</div>
+            <input type="hidden" id="originalTime">
+          </div>
+          <div class="col-4">
+            <div class="small text-danger fw-bold">สอนครั้งนี้</div>
+            <input type="number" id="hourLearned" class="form-control text-center fw-bold border-danger" placeholder="0" oninput="calculateTime()">
+          </div>
+          <div class="col-4">
+            <div class="small text-success fw-bold">เหลืออีก</div>
+            <div id="remainDisplay" class="fw-bold">0</div>
+            <input type="hidden" id="studyTimeRemain">
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-2 mb-2">
+        <div class="col-6"><select id="teacherSelect" class="form-select"></select></div>
+        <div class="col-6"><input type="text" id="displayCourse" class="form-control bg-light" readonly></div>
+      </div>
+      <textarea id="lessonNote" class="form-control mb-2" rows="4" placeholder="กรอกกิจกรรมการสอน..."></textarea>
+      <input type="file" id="file1" class="form-control mb-1" accept="image/*">
+      <input type="file" id="file2" class="form-control mb-1" accept="image/*">
+      <input type="file" id="file3" class="form-control mb-3" accept="image/*">
+      <button class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-pill" onclick="handleSave()">บันทึกข้อมูลการเรียน</button>
+    </div>
+  </div>
+
+  <div id="userPage" class="page text-center">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span class="badge bg-success rounded-pill">Student Profile</span>
+      <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">Logout</button>
+    </div>
+    <img id="userPic" class="avatar">
+    <h5 id="displayName" class="fw-bold mb-1"></h5>
+    <p class="text-muted small mb-3">เลือกคอร์สเรียนเพื่อดูรายละเอียด</p>
+
+    <div id="courseTabs" class="d-flex flex-wrap justify-content-center mb-3"></div>
+
+    <div class="section-title text-start">รายงานการเรียนล่าสุด</div>
+    <div id="reportContent">เลือกคอร์สเพื่อดูบันทึก...</div>
+
+    <hr class="my-4">
+    <div class="section-title text-start">คลังรูปภาพผลงานทั้งหมด</div>
+    <div id="galleryContainer" class="row g-2 mt-2"></div>
+  </div>
+</div>
+
+<script>
+  let masterData = [];
+  let currentUser = {};
+
+  window.onload = () => {
+    const session = localStorage.getItem('schoolSession');
+    if (session) {
+      currentUser = JSON.parse(session);
+      routePage(currentUser);
+    }
+  };
+
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function handleLogin() {
+    const u = document.getElementById('userInput').value;
+    const p = document.getElementById('passInput').value;
+    if(!u || !p) return alert("กรุณากรอกข้อมูลให้ครบ");
+    document.getElementById('loader').style.display = 'flex';
+    google.script.run.withSuccessHandler(res => {
+      document.getElementById('loader').style.display = 'none';
+      if(res.status === "success") {
+        localStorage.setItem('schoolSession', JSON.stringify(res));
+        routePage(res);
+      } else alert(res.msg);
+    }).checkLogin(u, p);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('schoolSession');
+    location.reload();
+  }
+
+  function routePage(user) {
+    if (user.role === "admin" || user.role === "teacher") {
+      document.getElementById('roleBadge').innerText = user.role === "admin" ? "Admin" : "Teacher: " + user.studentName;
+      document.getElementById('roleBadge').className = "badge rounded-pill " + (user.role === "admin" ? "bg-danger" : "bg-primary");
+      showPage('adminPage');
+      initAdmin(user);
+    } else {
+      showPage('userPage');
+      initUser(user.studentName);
+    }
+  }
+
+  function initAdmin(user) {
+    // 1. ดึงข้อมูลสถิติ (บน-กลาง)
+    google.script.run.withSuccessHandler(stats => {
+      document.getElementById('allTimeTotal').innerText = stats.total;
+      document.getElementById('monthlyTotal').innerText = stats.monthly;
+    }).getTeacherStats(user.role === "admin" ? "admin" : user.studentName);
+
+    // --- ส่วนที่เพิ่ม/ปรับปรุง ---
+    const specificArea = document.getElementById('specificTeacherArea');
+    if (user.role === 'teacher') {
+      specificArea.style.display = 'none'; // ถ้าเป็นครู ให้ซ่อนส่วนที่ 3 ทิ้ง
+    } else {
+      specificArea.style.display = 'block'; // ถ้าเป็น Admin ให้แสดงปกติ
+    }
+    // -------------------------
+
+    // 2. ดึงข้อมูลรายชื่อนักเรียนและตารางสอน
+    google.script.run.withSuccessHandler(data => {
+      masterData = data;
+      const studentSel = document.getElementById('studentSelect');
+      studentSel.innerHTML = '<option value="">-- เลือกนักเรียน --</option>';
+      data.forEach((r, i) => studentSel.add(new Option(r.name + " (" + r.course + ")", i)));
+
+      renderSchedule('all');
+
+      const tSel = document.getElementById('teacherSelect');
+      const fSel = document.getElementById('filterTeacher');
+
+      if (user.role === 'teacher') {
+        tSel.innerHTML = `<option value="${user.studentName}">${user.studentName}</option>`;
+        tSel.disabled = true;
+        fSel.style.display = 'none';
+      } else {
+        fSel.style.display = 'block';
+        google.script.run.withSuccessHandler(ts => {
+          tSel.innerHTML = '<option value="">-- เลือกครู --</option>';
+          fSel.innerHTML = '<option value="all">ทั้งหมด</option>';
+          ts.forEach(t => {
+            tSel.add(new Option(t[0], t[0]));
+            fSel.add(new Option(t[0], t[0]));
+          });
+        }).getTeacherList();
+      }
+    }).getStudentListData(user.role, user.studentName);
+  }
+
+  function renderSchedule(filterName) {
+    const scheduleList = document.getElementById('scheduleList');
+    let filtered = masterData;
+    if(filterName !== 'all') filtered = masterData.filter(r => r.teacher && r.teacher.includes(filterName));
+    scheduleList.innerHTML = filtered.length > 0 ? '' : '<p class="text-muted text-center mt-2">ไม่มีข้อมูล</p>';
+    filtered.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'schedule-item';
+      item.innerHTML = `<div><div>${r.name}</div><div style="font-size: 9px; color: #666;">${r.course}</div></div><div class="text-end"><b>${r.studyTimeSlot || '-'}</b><div class="text-primary" style="font-size: 9px;">${r.studyDay || '-'}</div></div>`;
+      scheduleList.appendChild(item);
+    });
+  }
+
+  function filterSchedule() {
+    const fSel = document.getElementById('filterTeacher');
+    const teacherName = fSel.value;
+    const specificLabel = document.getElementById('specificLabel');
+    const specificTotal = document.getElementById('specificTotal');
+
+    // 1. กรองตารางสอน
+    renderSchedule(teacherName);
+
+    // 2. ดึงยอดชั่วโมงสอนเฉพาะเดือนนี้ของครูที่เลือก
+    if (teacherName !== 'all' && teacherName !== "") {
+      // ปรับ Label ให้ชัดเจนว่าเป็นยอดเดือนนี้
+      specificLabel.innerText = "ยอด " + teacherName + " (เดือนนี้)";
+      specificTotal.innerText = "...";
+
+      google.script.run.withSuccessHandler(hour => {
+        specificTotal.innerText = hour;
+      }).getSpecificTeacherHour(teacherName);
+
+    } else {
+      specificLabel.innerText = "ยอดครูที่เลือก (เดือนนี้)";
+      specificTotal.innerText = "0.00";
+    }
+  }
+
+  function initUser(name) {
+    document.getElementById('displayName').innerText = name;
+    document.getElementById('loader').style.display = 'flex';
+    google.script.run.withSuccessHandler(data => {
+      document.getElementById('loader').style.display = 'none';
+      if(!data || data.length === 0) return;
+      if(data[0].pic) document.getElementById('userPic').src = getDriveThumb(getFileId(data[0].pic));
+      const tabs = document.getElementById('courseTabs');
+      tabs.innerHTML = "";
+      data.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = "btn btn-outline-primary course-btn";
+        btn.innerText = c.course;
+        btn.onclick = () => loadReport(c.name, c.course);
+        tabs.appendChild(btn);
+      });
+      if(data.length > 0) loadReport(data[0].name, data[0].course);
+    }).getStudentListUser(name);
+
+    google.script.run.withSuccessHandler(ids => {
+      const container = document.getElementById('galleryContainer');
+      container.innerHTML = "";
+      ids.forEach(id => {
+        const div = document.createElement('div');
+        div.className = "col-4";
+        div.innerHTML = `<a href="https://drive.google.com/uc?export=view&id=${id}" target="_blank"><img src="${getDriveThumb(id)}" class="gallery-item shadow-sm"></a>`;
+        container.appendChild(div);
+      });
+    }).getStudentGallery(name);
+  }
+
+  function loadReport(sName, cName) {
+    document.getElementById('loader').style.display = 'flex';
+    google.script.run.withSuccessHandler(res => {
+      document.getElementById('loader').style.display = 'none';
+      let imgHtml = "";
+      if (res.imgUrl) {
+        res.imgUrl.split(",").forEach(url => {
+          const fId = getFileId(url);
+          if(fId) imgHtml += `<img src="${getDriveThumb(fId)}" class="report-img">`;
+        });
+      }
+      document.getElementById('reportContent').innerHTML = `<div>👩‍🏫 ผู้สอน: ${res.teacher || '-'}\n⏳ เวลาคงเหลือ: ${res.time || 0} ชม.\n----------------------------------\n${res.lessonNote || "ไม่มีบันทึก"}</div><div class="mt-2">${imgHtml}</div>`;
+    }).getLatestInfo(sName, cName);
+  }
+
+  function loadAdminData() {
+    const idx = document.getElementById('studentSelect').value;
+    if(idx === "") return;
+    document.getElementById('loader').style.display = 'flex';
+    const s = masterData[idx];
+    document.getElementById('adminForm').style.display = 'block';
+    document.getElementById('adminPic').src = getDriveThumb(getFileId(s.pic));
+    document.getElementById('displayCourse').value = s.course;
+    google.script.run.withSuccessHandler(res => {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('lessonNote').value = res.lessonNote || "";
+      const timeVal = parseFloat(res.time) || 0;
+      document.getElementById('originalTime').value = timeVal;
+      document.getElementById('originalDisplay').innerText = timeVal;
+      document.getElementById('studyTimeRemain').value = timeVal;
+      document.getElementById('remainDisplay').innerText = timeVal;
+    }).getLatestInfo(s.name, s.course);
+  }
+
+  function calculateTime() {
+    const original = parseFloat(document.getElementById('originalTime').value) || 0;
+    const learned = parseFloat(document.getElementById('hourLearned').value) || 0;
+    const finalVal = Math.max(0, original - learned);
+    document.getElementById('remainDisplay').innerText = finalVal.toFixed(2);
+    document.getElementById('studyTimeRemain').value = finalVal.toFixed(2);
+  }
+
+  function handleSave() {
+    const idx = document.getElementById('studentSelect').value;
+    const teacher = document.getElementById('teacherSelect').value;
+    const hr = document.getElementById('hourLearned').value;
+    if(idx === "" || !teacher || hr === "") return alert("กรุณากรอกข้อมูลให้ครบ");
+    document.getElementById('loader').style.display = 'flex';
+    const s = masterData[idx];
+    const obj = {
+      studentName: s.name, course: s.course, teacher: teacher,
+      hourLearned: parseFloat(hr),
+      studyTimeRemain: document.getElementById('studyTimeRemain').value,
+      content: document.getElementById('lessonNote').value,
+      files: []
+    };
+    const fileInputs = [document.getElementById('file1'), document.getElementById('file2'), document.getElementById('file3')];
+    let filesToUpload = fileInputs.filter(f => f.files.length > 0);
+    let loadedCount = 0;
+
+    const sendData = () => {
+      google.script.run.withSuccessHandler(res => {
+        document.getElementById('loader').style.display = 'none';
+        alert(res.msg);
+        location.reload();
+      }).saveRecord(obj);
+    };
+
+    if (filesToUpload.length > 0) {
+      filesToUpload.forEach(input => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          obj.files.push({ body: e.target.result, type: input.files[0].type });
+          loadedCount++;
+          if (loadedCount === filesToUpload.length) sendData();
+        };
+        reader.readAsDataURL(input.files[0]);
+      });
+    } else { sendData(); }
+  }
+
+  function getDriveThumb(id) { return id ? "https://drive.google.com/thumbnail?sz=800&id=" + id : "https://cdn-icons-png.flaticon.com/512/149/149071.png"; }
+  function getFileId(url) { if(!url || typeof url !== 'string') return ""; let id = ""; if(url.includes("id=")) id = url.split("id=")[1].split("&")[0]; else if(url.includes("/d/")) id = url.split("/d/")[1].split("/")[0]; return id; }
+</script>
+</body>
+</html>
