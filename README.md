@@ -1,17 +1,26 @@
 # OSC ACADEMY
 
-Portfolio Academy System — Google Apps Script web app สำหรับบันทึกและติดตามการเรียนการสอน
+Portfolio Academy System — ระบบบันทึกและติดตามการเรียนการสอน
 
 - Sheet ข้อมูล: https://docs.google.com/spreadsheets/d/1q7_Z8njO8kzW9U1TPjExYY-j_v5UIScvWNxJsvOgbcA/edit
-- ไฟล์หลัก: `Code.gs` (server logic), `Index.html` (UI), `appsscript.json` (manifest)
 
-## วิธี sync กับ Google Apps Script (manual)
+## สถาปัตยกรรม
 
-GitHub repo นี้เป็นที่เก็บโค้ดหลัก (source of truth) ส่วน Apps Script editor เป็นที่รันจริง — sync กันด้วยการ copy-paste
+- **`Code.gs`** — รันบน Google Apps Script เป็น JSON API (ผ่าน `doGet`/`doPost`) ต้อง import เข้า Apps Script editor ด้วยตนเอง (copy-paste) แล้ว Deploy เป็น Web App
+- **`index.html`** — หน้าเว็บ UI โฮสต์อยู่บน **GitHub Pages** เรียกข้อมูลจาก Apps Script Web App ผ่าน `fetch()` (ไม่ใช้ `google.script.run` เพราะใช้ได้แค่ตอน HTML ถูก serve จาก Apps Script เท่านั้น)
 
-1. แก้ไขโค้ดใน repo นี้ (`Code.gs`, `Index.html`, `appsscript.json`) แล้ว commit/push ขึ้น GitHub ตามปกติ
-2. เปิด Apps Script editor ของโปรเจกต์ Portfolio Academy System
-3. คัดลอกเนื้อหาไฟล์ที่แก้ไขจาก repo นี้ ไปแทนที่ไฟล์เดิมในตัว editor (`Code.gs` → `Code.gs`, `Index.html` → `Index`)
-4. กด Save แล้ว Deploy > Manage deployments > New deployment (หรือแก้ deployment เดิม) เพื่ออัปเดตเว็บแอป
+## วิธี deploy
 
-หมายเหตุ: ลองใช้ `clasp` เพื่อ sync อัตโนมัติแล้ว แต่ OAuth client ที่ฝังมาใน clasp ถูก Google ปิดใช้งานเนื่องจากไม่รองรับ PKCE ตามนโยบายความปลอดภัยล่าสุด ถ้าต้องการ sync อัตโนมัติในอนาคต ต้องสร้าง OAuth client ของตัวเองผ่าน Google Cloud Console แล้วใช้ `clasp login --creds <credentials.json>`
+1. **ฝั่ง Apps Script**:
+   - เปิด Apps Script editor ของโปรเจกต์ Portfolio Academy System
+   - คัดลอกเนื้อหา `Code.gs` จาก repo นี้ไปแทนที่ของเดิมในตัว editor
+   - Deploy > Manage deployments > New deployment > Web app (Execute as: Me, Who has access: Anyone) > คัดลอก URL ที่ลงท้ายด้วย `/exec`
+
+2. **ฝั่ง GitHub Pages**:
+   - เปิด `index.html` ในนี้ แก้ค่า `const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_EXEC_URL_HERE";` ให้เป็น URL `/exec` ที่ได้จากขั้นตอนที่ 1
+   - เปิด GitHub Pages ที่ Settings > Pages > Source: `master` branch, root `/`
+   - เว็บจะรันที่ `https://entclick88.github.io/OSC-ACADEMY/`
+
+3. ถ้าแก้ `Code.gs` ในอนาคต ต้อง copy-paste เข้า Apps Script editor ใหม่ทุกครั้ง แล้ว Deploy ใหม่ (แก้แค่ฝั่ง GitHub ไม่มีผลกับเว็บแอปที่รันจริง)
+
+หมายเหตุ: ลองใช้ `clasp` เพื่อ push โค้ดอัตโนมัติแล้ว แต่ติดปัญหาฝั่ง Google (OAuth client เดิมของ clasp ถูกบล็อก และ client ที่สร้างเองก็โดน policy "doesn't comply with Google's OAuth 2.0 policy" แม้เพิ่ม PKCE แล้ว) จึงใช้วิธี manual sync ไปก่อน

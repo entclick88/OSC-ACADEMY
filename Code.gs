@@ -1,12 +1,56 @@
 const SS_ID = '1q7_Z8njO8kzW9U1TPjExYY-j_v5UIScvWNxJsvOgbcA';
 const FOLDER_ID = '1qAGBVRW4P5WF6gi20z96GfaDyJJ5fFuk';
 
-function doGet() {
-  return HtmlService.createTemplateFromFile('Index')
-      .evaluate()
-      .setTitle('Portfolio Academy System')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+// Frontend (Index.html) is hosted on GitHub Pages and calls this Web App
+// as a JSON API. doGet handles read-only calls, doPost handles saveRecord
+// (which needs a larger body for the uploaded images).
+function doGet(e) {
+  const action = e.parameter.action;
+  let result;
+  switch (action) {
+    case 'checkLogin':
+      result = checkLogin(e.parameter.u, e.parameter.p);
+      break;
+    case 'getStudentListData':
+      result = getStudentListData(e.parameter.role, e.parameter.name);
+      break;
+    case 'getTeacherList':
+      result = getTeacherList();
+      break;
+    case 'getTeacherStats':
+      result = getTeacherStats(e.parameter.teacherName);
+      break;
+    case 'getSpecificTeacherHour':
+      result = getSpecificTeacherHour(e.parameter.teacherName);
+      break;
+    case 'getStudentListUser':
+      result = getStudentListUser(e.parameter.name);
+      break;
+    case 'getLatestInfo':
+      result = getLatestInfo(e.parameter.n, e.parameter.c);
+      break;
+    case 'getStudentGallery':
+      result = getStudentGallery(e.parameter.studentName);
+      break;
+    default:
+      result = { error: 'Unknown action: ' + action };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const body = JSON.parse(e.postData.contents);
+  let result;
+  switch (body.action) {
+    case 'saveRecord':
+      result = saveRecord(body.payload);
+      break;
+    default:
+      result = { error: 'Unknown action: ' + body.action };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
 }
 
 // 1. คำนวณยอดสอนสะสมเดือนนี้

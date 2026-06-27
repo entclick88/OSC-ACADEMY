@@ -146,6 +146,21 @@
 </div>
 
 <script>
+  const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_EXEC_URL_HERE";
+
+  function callApi(action, params = {}) {
+    const qs = new URLSearchParams({ action, ...params }).toString();
+    return fetch(`${API_URL}?${qs}`).then(r => r.json());
+  }
+
+  function postApi(action, payload) {
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, payload })
+    }).then(r => r.json());
+  }
+
   let masterData = [];
   let currentUser = {};
 
@@ -167,13 +182,13 @@
     const p = document.getElementById('passInput').value;
     if(!u || !p) return alert("กรุณากรอกข้อมูลให้ครบ");
     document.getElementById('loader').style.display = 'flex';
-    google.script.run.withSuccessHandler(res => {
+    callApi('checkLogin', { u, p }).then(res => {
       document.getElementById('loader').style.display = 'none';
       if(res.status === "success") {
         localStorage.setItem('schoolSession', JSON.stringify(res));
         routePage(res);
       } else alert(res.msg);
-    }).checkLogin(u, p);
+    });
   }
 
   function handleLogout() {
@@ -195,10 +210,10 @@
 
   function initAdmin(user) {
     // 1. ดึงข้อมูลสถิติ (บน-กลาง)
-    google.script.run.withSuccessHandler(stats => {
+    callApi('getTeacherStats', { teacherName: user.role === "admin" ? "admin" : user.studentName }).then(stats => {
       document.getElementById('allTimeTotal').innerText = stats.total;
       document.getElementById('monthlyTotal').innerText = stats.monthly;
-    }).getTeacherStats(user.role === "admin" ? "admin" : user.studentName);
+    });
 
     // --- ส่วนที่เพิ่ม/ปรับปรุง ---
     const specificArea = document.getElementById('specificTeacherArea');
@@ -210,7 +225,7 @@
     // -------------------------
 
     // 2. ดึงข้อมูลรายชื่อนักเรียนและตารางสอน
-    google.script.run.withSuccessHandler(data => {
+    callApi('getStudentListData', { role: user.role, name: user.studentName }).then(data => {
       masterData = data;
       const studentSel = document.getElementById('studentSelect');
       studentSel.innerHTML = '<option value="">-- เลือกนักเรียน --</option>';
@@ -227,16 +242,16 @@
         fSel.style.display = 'none';
       } else {
         fSel.style.display = 'block';
-        google.script.run.withSuccessHandler(ts => {
+        callApi('getTeacherList').then(ts => {
           tSel.innerHTML = '<option value="">-- เลือกครู --</option>';
           fSel.innerHTML = '<option value="all">ทั้งหมด</option>';
           ts.forEach(t => {
             tSel.add(new Option(t[0], t[0]));
             fSel.add(new Option(t[0], t[0]));
           });
-        }).getTeacherList();
+        });
       }
-    }).getStudentListData(user.role, user.studentName);
+    });
   }
 
   function renderSchedule(filterName) {
@@ -267,9 +282,9 @@
       specificLabel.innerText = "ยอด " + teacherName + " (เดือนนี้)";
       specificTotal.innerText = "...";
 
-      google.script.run.withSuccessHandler(hour => {
+      callApi('getSpecificTeacherHour', { teacherName }).then(hour => {
         specificTotal.innerText = hour;
-      }).getSpecificTeacherHour(teacherName);
+      });
 
     } else {
       specificLabel.innerText = "ยอดครูที่เลือก (เดือนนี้)";
@@ -280,7 +295,7 @@
   function initUser(name) {
     document.getElementById('displayName').innerText = name;
     document.getElementById('loader').style.display = 'flex';
-    google.script.run.withSuccessHandler(data => {
+    callApi('getStudentListUser', { name }).then(data => {
       document.getElementById('loader').style.display = 'none';
       if(!data || data.length === 0) return;
       if(data[0].pic) document.getElementById('userPic').src = getDriveThumb(getFileId(data[0].pic));
@@ -294,9 +309,9 @@
         tabs.appendChild(btn);
       });
       if(data.length > 0) loadReport(data[0].name, data[0].course);
-    }).getStudentListUser(name);
+    });
 
-    google.script.run.withSuccessHandler(ids => {
+    callApi('getStudentGallery', { studentName: name }).then(ids => {
       const container = document.getElementById('galleryContainer');
       container.innerHTML = "";
       ids.forEach(id => {
@@ -305,12 +320,12 @@
         div.innerHTML = `<a href="https://drive.google.com/uc?export=view&id=${id}" target="_blank"><img src="${getDriveThumb(id)}" class="gallery-item shadow-sm"></a>`;
         container.appendChild(div);
       });
-    }).getStudentGallery(name);
+    });
   }
 
   function loadReport(sName, cName) {
     document.getElementById('loader').style.display = 'flex';
-    google.script.run.withSuccessHandler(res => {
+    callApi('getLatestInfo', { n: sName, c: cName }).then(res => {
       document.getElementById('loader').style.display = 'none';
       let imgHtml = "";
       if (res.imgUrl) {
@@ -320,7 +335,7 @@
         });
       }
       document.getElementById('reportContent').innerHTML = `<div>👩‍🏫 ผู้สอน: ${res.teacher || '-'}\n⏳ เวลาคงเหลือ: ${res.time || 0} ชม.\n----------------------------------\n${res.lessonNote || "ไม่มีบันทึก"}</div><div class="mt-2">${imgHtml}</div>`;
-    }).getLatestInfo(sName, cName);
+    });
   }
 
   function loadAdminData() {
@@ -331,7 +346,7 @@
     document.getElementById('adminForm').style.display = 'block';
     document.getElementById('adminPic').src = getDriveThumb(getFileId(s.pic));
     document.getElementById('displayCourse').value = s.course;
-    google.script.run.withSuccessHandler(res => {
+    callApi('getLatestInfo', { n: s.name, c: s.course }).then(res => {
       document.getElementById('loader').style.display = 'none';
       document.getElementById('lessonNote').value = res.lessonNote || "";
       const timeVal = parseFloat(res.time) || 0;
@@ -339,7 +354,7 @@
       document.getElementById('originalDisplay').innerText = timeVal;
       document.getElementById('studyTimeRemain').value = timeVal;
       document.getElementById('remainDisplay').innerText = timeVal;
-    }).getLatestInfo(s.name, s.course);
+    });
   }
 
   function calculateTime() {
@@ -369,11 +384,11 @@
     let loadedCount = 0;
 
     const sendData = () => {
-      google.script.run.withSuccessHandler(res => {
+      postApi('saveRecord', obj).then(res => {
         document.getElementById('loader').style.display = 'none';
         alert(res.msg);
         location.reload();
-      }).saveRecord(obj);
+      });
     };
 
     if (filesToUpload.length > 0) {
