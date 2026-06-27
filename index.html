@@ -188,6 +188,10 @@
         localStorage.setItem('schoolSession', JSON.stringify(res));
         routePage(res);
       } else alert(res.msg);
+    }).catch(err => {
+      document.getElementById('loader').style.display = 'none';
+      alert("เชื่อมต่อ API ไม่สำเร็จ: " + err.message);
+      console.error(err);
     });
   }
 
