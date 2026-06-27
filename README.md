@@ -5,28 +5,13 @@ Portfolio Academy System — Google Apps Script web app สำหรับบั
 - Sheet ข้อมูล: https://docs.google.com/spreadsheets/d/1q7_Z8njO8kzW9U1TPjExYY-j_v5UIScvWNxJsvOgbcA/edit
 - ไฟล์หลัก: `Code.gs` (server logic), `Index.html` (UI), `appsscript.json` (manifest)
 
-## วิธี sync กับ Google Apps Script ด้วย clasp
+## วิธี sync กับ Google Apps Script (manual)
 
-1. ติดตั้ง clasp (ครั้งเดียว):
-   ```
-   npm install -g @google/clasp
-   clasp login
-   ```
-2. ผูกโฟลเดอร์นี้กับ Apps Script project ที่มีอยู่แล้ว (ใช้ Script ID จาก Apps Script editor > Project Settings):
-   ```
-   clasp clone <SCRIPT_ID>
-   ```
-   หรือถ้าต้องการสร้างโปรเจกต์ใหม่:
-   ```
-   clasp create --type webapp --title "OSC ACADEMY"
-   ```
-3. หลังแก้ไขโค้ดในเครื่อง ให้ push ขึ้น Apps Script:
-   ```
-   clasp push
-   ```
-4. Deploy เป็น Web App:
-   ```
-   clasp deploy
-   ```
+GitHub repo นี้เป็นที่เก็บโค้ดหลัก (source of truth) ส่วน Apps Script editor เป็นที่รันจริง — sync กันด้วยการ copy-paste
 
-`.clasp.json` (มี scriptId เฉพาะของแต่ละคน) ถูก ignore ไว้ใน git — ต้องสร้างเองตอน clone/create ครั้งแรก
+1. แก้ไขโค้ดใน repo นี้ (`Code.gs`, `Index.html`, `appsscript.json`) แล้ว commit/push ขึ้น GitHub ตามปกติ
+2. เปิด Apps Script editor ของโปรเจกต์ Portfolio Academy System
+3. คัดลอกเนื้อหาไฟล์ที่แก้ไขจาก repo นี้ ไปแทนที่ไฟล์เดิมในตัว editor (`Code.gs` → `Code.gs`, `Index.html` → `Index`)
+4. กด Save แล้ว Deploy > Manage deployments > New deployment (หรือแก้ deployment เดิม) เพื่ออัปเดตเว็บแอป
+
+หมายเหตุ: ลองใช้ `clasp` เพื่อ sync อัตโนมัติแล้ว แต่ OAuth client ที่ฝังมาใน clasp ถูก Google ปิดใช้งานเนื่องจากไม่รองรับ PKCE ตามนโยบายความปลอดภัยล่าสุด ถ้าต้องการ sync อัตโนมัติในอนาคต ต้องสร้าง OAuth client ของตัวเองผ่าน Google Cloud Console แล้วใช้ `clasp login --creds <credentials.json>`
