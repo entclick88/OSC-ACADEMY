@@ -32,6 +32,9 @@ function doGet(e) {
     case 'getStudentGallery':
       result = getStudentGallery(e.parameter.studentName);
       break;
+    case 'debugRecWidth':
+      result = debugRecWidth();
+      break;
     default:
       result = { error: 'Unknown action: ' + action };
   }
@@ -88,10 +91,12 @@ function getLatestInfo(n, c) {
   try {
     const ss = SpreadsheetApp.openById(SS_ID);
     const sheet = ss.getSheetByName('Rec');
-    const headers = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0];
-    const colIdx = headers.indexOf(`${n} (${c})`) + 1;
-    if (colIdx === 0) return { teacher: "", time: 0, lessonNote: "", imgUrl: "" };
+    const headerText = `${n} (${c})`;
+    const finder = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1))
+        .createTextFinder(headerText).matchEntireCell(true).findNext();
+    if (!finder) return { teacher: "", time: 0, lessonNote: "", imgUrl: "" };
 
+    const colIdx = finder.getColumn();
     const colData = sheet.getRange(1, colIdx, 8, 1).getValues();
     return {
       teacher: colData[2][0] ? colData[2][0].toString() : "",
@@ -99,7 +104,17 @@ function getLatestInfo(n, c) {
       lessonNote: colData[5][0] ? colData[5][0].toString() : "",
       imgUrl: colData[7][0] ? colData[7][0].toString() : ""
     };
-  } catch(e) { return { teacher: "", time: 0, lessonNote: "", imgUrl: "" }; }
+  } catch(e) { return { teacher: "", time: 0, lessonNote: "", imgUrl: "", debugError: e.message }; }
+}
+
+// Debug helper — เช็คขนาดของชีท Rec เพื่อวินิจฉัยปัญหา timeout
+function debugRecWidth() {
+  try {
+    const ss = SpreadsheetApp.openById(SS_ID);
+    const sheet = ss.getSheetByName('Rec');
+    if (!sheet) return { error: 'ไม่พบชีท Rec' };
+    return { lastColumn: sheet.getLastColumn(), lastRow: sheet.getLastRow() };
+  } catch (e) { return { error: e.message }; }
 }
 
 // 3. บันทึกข้อมูล (รองรับ 3 รูป)
@@ -122,9 +137,12 @@ function saveRecord(obj) {
 
   const sheetRec = ss.getSheetByName('Rec');
   const header = `${obj.studentName} (${obj.course})`;
-  let headers = sheetRec.getRange(1, 1, 1, Math.max(sheetRec.getLastColumn(), 1)).getValues()[0];
-  let col = headers.indexOf(header) + 1;
-  if (col === 0) { col = headers.filter(String).length + 1; sheetRec.getRange(1, col).setValue(header); }
+  const lastCol = sheetRec.getLastColumn();
+  const finder = lastCol > 0
+      ? sheetRec.getRange(1, 1, 1, lastCol).createTextFinder(header).matchEntireCell(true).findNext()
+      : null;
+  const col = finder ? finder.getColumn() : lastCol + 1;
+  if (!finder) sheetRec.getRange(1, col).setValue(header);
 
   sheetRec.getRange(1, col, 8, 1).setValues([
     [header], [formattedDate], [obj.teacher], [obj.studyTimeRemain], [obj.course], [obj.content], [""], [finalUrls]
