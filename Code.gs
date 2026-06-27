@@ -26,8 +26,8 @@ function doGet(e) {
     case 'getStudentListUser':
       result = getStudentListUser(e.parameter.name);
       break;
-    case 'getLatestInfo':
-      result = getLatestInfo(e.parameter.n, e.parameter.c);
+    case 'fetchLatestInfo':
+      result = fetchLatestInfo(e.parameter.n, e.parameter.c);
       break;
     case 'getStudentGallery':
       result = getStudentGallery(e.parameter.studentName);
@@ -87,7 +87,7 @@ function getMonthlyHours(teacherName) {
 }
 
 // 2. ดึงข้อมูลล่าสุด
-function getLatestInfo(n, c) {
+function fetchLatestInfo(n, c) {
   try {
     const ss = SpreadsheetApp.openById(SS_ID);
     const sheet = ss.getSheetByName('Rec');
