@@ -27,7 +27,7 @@ function doGet(e) {
       result = getStudentListUser(e.parameter.name);
       break;
     case 'fetchLatestInfo':
-      result = fetchLatestInfo(e.parameter.n, e.parameter.c);
+      result = fetchLatestInfo(e.parameter.n, e.parameter.course);
       break;
     case 'getStudentGallery':
       result = getStudentGallery(e.parameter.studentName);

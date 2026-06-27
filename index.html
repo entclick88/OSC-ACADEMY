@@ -329,7 +329,7 @@
 
   function loadReport(sName, cName) {
     document.getElementById('loader').style.display = 'flex';
-    callApi('fetchLatestInfo', { n: sName, c: cName }).then(res => {
+    callApi('fetchLatestInfo', { n: sName, course: cName }).then(res => {
       document.getElementById('loader').style.display = 'none';
       let imgHtml = "";
       if (res.imgUrl) {
@@ -350,7 +350,7 @@
     document.getElementById('adminForm').style.display = 'block';
     document.getElementById('adminPic').src = getDriveThumb(getFileId(s.pic));
     document.getElementById('displayCourse').value = s.course;
-    callApi('fetchLatestInfo', { n: s.name, c: s.course }).then(res => {
+    callApi('fetchLatestInfo', { n: s.name, course: s.course }).then(res => {
       document.getElementById('loader').style.display = 'none';
       document.getElementById('lessonNote').value = res.lessonNote || "";
       const timeVal = parseFloat(res.time) || 0;
